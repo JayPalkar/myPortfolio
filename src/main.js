@@ -2,10 +2,11 @@ import "./style.scss";
 import { SOCIAL_LINKS, TEXTURE_MAP } from "./constants";
 
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { OrbitControls } from "./utils/orbitControls";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { hideModal, showModal } from "./animationFunctions";
+// import { playHoverAnimation } from "./animationFunctions";
+import gsap from "gsap";
 
 // Canvas
 const canvas = document.querySelector("#portfolioCanvas");
@@ -19,19 +20,24 @@ const modals = {
   abouts: document.querySelector("#abouts"),
 };
 
-const exitButton = document
-  .querySelectorAll("#modalExitButton")
-  .forEach((button) => {
-    button.addEventListener("click", (e) => {
-      const modal = e.target.closest(".modal");
-      hideModal(modal);
-    });
+let isModalOpen = false;
+
+document.querySelectorAll(".modalExitButton").forEach((button) => {
+  button.addEventListener("click", (e) => {
+    const modal = e.target.closest(".modal");
+    hideModal(modal);
   });
+  button.addEventListener("touchend", (e) => {
+    const modal = e.target.closest(".modal");
+    hideModal(modal);
+  });
+});
 
 const cpuFans = [];
 
 const raycasterObjects = [];
 let currentIntersects = [];
+let currentHoveredObject = null;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -71,7 +77,7 @@ Object.entries(TEXTURE_MAP).forEach(([key, paths]) => {
 });
 
 // Object Loader
-loader.load("/models/Portfolio_model_v3.glb", (glb) => {
+loader.load("/models/Portfolio_model_v5.glb", (glb) => {
   glb.scene.traverse((child) => {
     if (child.isMesh) {
       Object.keys(TEXTURE_MAP).forEach((key) => {
@@ -88,6 +94,16 @@ loader.load("/models/Portfolio_model_v3.glb", (glb) => {
 
           if (child.name.includes("raycaster") && !child.name.includes("fan")) {
             raycasterObjects.push(child);
+          }
+
+          if (child.name.includes("hover")) {
+            child.userData.initialScale = new THREE.Vector3().copy(child.scale);
+            child.userData.initialPosition = new THREE.Vector3().copy(
+              child.position
+            );
+            child.userData.initialRotation = new THREE.Euler().copy(
+              child.rotation
+            );
           }
           if (child.material.map) {
             child.material.map.minFilter = THREE.LinearFilter;
@@ -119,6 +135,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 // OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
+
+controls.minDistance = 5;
+controls.maxDistance = 50;
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2;
+controls.minAzimuthAngle = 0;
+controls.maxAzimuthAngle = Math.PI / 2;
+
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.update();
@@ -140,12 +164,8 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-window.addEventListener("mousemove", (e) => {
-  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
-
-window.addEventListener("click", (e) => {
+// support functions
+const handleRaycasterInteraction = () => {
   if (currentIntersects.length > 0) {
     const object = currentIntersects[0].object;
     Object.entries(SOCIAL_LINKS).forEach(([key, url]) => {
@@ -164,9 +184,110 @@ window.addEventListener("click", (e) => {
       showModal(modals.abouts);
     }
   }
+};
+
+const showModal = (modal) => {
+  modal.style.display = "block";
+  isModalOpen = true;
+  controls.enabled = false;
+
+  if (currentHoveredObject) {
+    playHoverAnimation(currentHoveredObject, false);
+    currentHoveredObject = null;
+  }
+
+  document.body.style.cursor = "default";
+  currentIntersects = [];
+
+  gsap.set(modal, { opacity: 0 });
+  gsap.to(modal, { opacity: 1, duration: 0.5 });
+};
+
+const hideModal = (modal) => {
+  isModalOpen = false;
+  controls.enabled = true;
+  gsap.to(modal, {
+    opacity: 0,
+    duration: 0.5,
+    onComplete: () => {
+      modal.style.display = "none";
+    },
+  });
+};
+
+const playHoverAnimation = (object, isHovering) => {
+  gsap.killTweensOf(object.scale);
+  gsap.killTweensOf(object.position);
+  gsap.killTweensOf(object.rotation);
+
+  if (object.name.includes("_hover_3")) {
+    if (isHovering) {
+      gsap.to(object.scale, {
+        x: object.userData.initialScale.x,
+        y: object.userData.initialScale.y,
+        z: object.userData.initialScale.z,
+        duration: 0.2,
+        ease: "bounce.out(1.8)",
+      });
+    } else {
+      gsap.to(object.scale, {
+        x: object.userData.initialScale.x,
+        y: object.userData.initialScale.y,
+        z: object.userData.initialScale.z,
+        duration: 0.2,
+        ease: "bounce.out(1.8)",
+      });
+    }
+    return;
+  }
+
+  if (isHovering) {
+    gsap.to(object.scale, {
+      x: object.userData.initialScale.x * 1.2,
+      y: object.userData.initialScale.y * 1.2,
+      z: object.userData.initialScale.z * 1.2,
+      duration: 0.5,
+      ease: "bounce.out(1.8)",
+    });
+  } else {
+    gsap.to(object.scale, {
+      x: object.userData.initialScale.x,
+      y: object.userData.initialScale.y,
+      z: object.userData.initialScale.z,
+      duration: 0.2,
+      ease: "bounce.out(1.8)",
+    });
+  }
+};
+
+// Event listeners
+window.addEventListener("mousemove", (e) => {
+  pointer.x = (e.clientX / sizes.width) * 2 - 1;
+  pointer.y = -(e.clientY / sizes.height) * 2 + 1;
 });
 
-// LoopFunctions
+window.addEventListener(
+  "touchstart",
+  (e) => {
+    if (isModalOpen) return;
+    e.preventDefault();
+    pointer.x = (e.touches[0].clientX / sizes.width) * 2 - 1;
+    pointer.y = -(e.touches[0].clientY / sizes.height) * 2 + 1;
+  },
+  { passive: false }
+);
+window.addEventListener(
+  "touchend",
+  (e) => {
+    if (isModalOpen) return;
+    e.preventDefault();
+    handleRaycasterInteraction();
+  },
+  { passive: false }
+);
+window.addEventListener("click", handleRaycasterInteraction);
+
+// loopFunction
 const render = () => {
   controls.update();
 
@@ -180,21 +301,39 @@ const render = () => {
   });
 
   // raycaster
-  raycaster.setFromCamera(pointer, camera);
+  if (!isModalOpen) {
+    raycaster.setFromCamera(pointer, camera);
 
-  currentIntersects = raycaster.intersectObjects(raycasterObjects);
+    currentIntersects = raycaster.intersectObjects(raycasterObjects);
 
-  for (let i = 0; i < currentIntersects.length; i++) {}
+    for (let i = 0; i < currentIntersects.length; i++) {}
 
-  if (currentIntersects.length > 0) {
-    const currentIntersectObject = currentIntersects[0].object;
-    if (currentIntersectObject.name.includes("pointer")) {
-      document.body.style.cursor = "pointer";
+    if (currentIntersects.length > 0) {
+      const currentIntersectObject = currentIntersects[0].object;
+
+      if (currentIntersectObject.name.includes("_hover")) {
+        if (currentIntersectObject !== currentHoveredObject) {
+          if (currentHoveredObject) {
+            playHoverAnimation(currentHoveredObject, false);
+          }
+
+          playHoverAnimation(currentIntersectObject, true);
+          currentHoveredObject = currentIntersectObject;
+        }
+      }
+
+      if (currentIntersectObject.name.includes("pointer")) {
+        document.body.style.cursor = "pointer";
+      } else {
+        document.body.style.cursor = "default";
+      }
     } else {
+      if (currentHoveredObject) {
+        playHoverAnimation(currentHoveredObject, false);
+        currentHoveredObject = null;
+      }
       document.body.style.cursor = "default";
     }
-  } else {
-    document.body.style.cursor = "default";
   }
 
   renderer.render(scene, camera);
