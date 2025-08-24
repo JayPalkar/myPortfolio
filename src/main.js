@@ -13,6 +13,8 @@ const sizes = {
   width: window.innerWidth,
 };
 
+const cpuFans = [];
+
 // Loaders
 const textureLoader = new THREE.TextureLoader();
 
@@ -59,6 +61,9 @@ loader.load("/models/Portfolio_model_v2.glb", (glb) => {
 
           child.material = material;
 
+          if (child.name.includes("fan")) {
+            cpuFans.push(child);
+          }
           if (child.material.map) {
             child.material.map.minFilter = THREE.LinearFilter;
           }
@@ -117,6 +122,10 @@ const render = () => {
   // console.log(camera.position);
   // console.log("/-----------------------/");
   // console.log(controls.target);
+
+  cpuFans.forEach((fan) => {
+    fan.rotation.z += 0.1;
+  });
 
   renderer.render(scene, camera);
 
