@@ -1,22 +1,85 @@
 import "./style.scss";
+import { TEXTURE_MAP } from "./constants";
+
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
+// Canvas
 const canvas = document.querySelector("#portfolioCanvas");
 const sizes = {
   height: window.innerHeight,
   width: window.innerWidth,
 };
-const scene = new THREE.Scene();
 
+// Loaders
+const textureLoader = new THREE.TextureLoader();
+
+// Model Loaders
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("/draco/");
+
+const loader = new GLTFLoader();
+loader.setDRACOLoader(dracoLoader);
+
+// Texture Loader
+const loadedTextures = {
+  day: {},
+  nightLightOff: {},
+  nightLightOn: {},
+};
+
+Object.entries(TEXTURE_MAP).forEach(([key, paths]) => {
+  const dayTexture = textureLoader.load(paths.day);
+  dayTexture.flipY = false;
+  dayTexture.colorSpace = THREE.SRGBColorSpace;
+  loadedTextures.day[key] = dayTexture;
+
+  const nightLightOffTexture = textureLoader.load(paths.nightLightOff);
+  nightLightOffTexture.flipY = false;
+  nightLightOffTexture.colorSpace = THREE.SRGBColorSpace;
+  loadedTextures.nightLightOff[key] = nightLightOffTexture;
+
+  const nightLightOnTexture = textureLoader.load(paths.nightLightOn);
+  nightLightOnTexture.flipY = false;
+  nightLightOnTexture.colorSpace = THREE.SRGBColorSpace;
+  loadedTextures.nightLightOn[key] = nightLightOnTexture;
+});
+
+// Object Loader
+loader.load("/models/Portfolio_model.glb", (glb) => {
+  glb.scene.traverse((child) => {
+    if (child.isMesh) {
+      Object.keys(TEXTURE_MAP).forEach((key) => {
+        if (child.name.includes(key)) {
+          const material = new THREE.MeshBasicMaterial({
+            map: loadedTextures.day[key],
+          });
+
+          child.material = material;
+
+          if (child.material.map) {
+            child.material.map.minFilter = THREE.LinearFilter;
+          }
+        }
+      });
+    }
+  });
+  scene.add(glb.scene);
+});
+
+// Scene N Camera
+const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-  75,
+  35,
   sizes.width / sizes.height,
   0.1,
   1000
 );
 camera.position.z = 5;
 
+// Renderer
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
   antialias: true,
@@ -24,16 +87,13 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
-
+// OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.update();
 
+// EventHandlers
 window.addEventListener("resize", () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
@@ -45,11 +105,9 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
+// LoopFunctions
 const render = () => {
   controls.update();
-
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
 
   renderer.render(scene, camera);
 
