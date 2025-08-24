@@ -48,7 +48,7 @@ Object.entries(TEXTURE_MAP).forEach(([key, paths]) => {
 });
 
 // Object Loader
-loader.load("/models/Portfolio_model.glb", (glb) => {
+loader.load("/models/Portfolio_model_v2.glb", (glb) => {
   glb.scene.traverse((child) => {
     if (child.isMesh) {
       Object.keys(TEXTURE_MAP).forEach((key) => {
@@ -77,7 +77,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.z = 5;
+camera.position.set(18.628652183389555, 14.94457844546518, 31.32241288603809);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -92,6 +92,11 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.update();
+controls.target.set(
+  -0.8235149963276548,
+  3.4261704474788774,
+  -0.7296685568144353
+);
 
 // EventHandlers
 window.addEventListener("resize", () => {
@@ -108,6 +113,10 @@ window.addEventListener("resize", () => {
 // LoopFunctions
 const render = () => {
   controls.update();
+
+  // console.log(camera.position);
+  // console.log("/-----------------------/");
+  // console.log(controls.target);
 
   renderer.render(scene, camera);
 
