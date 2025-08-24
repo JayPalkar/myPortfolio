@@ -1,5 +1,5 @@
 import "./style.scss";
-import { TEXTURE_MAP } from "./constants";
+import { SOCIAL_LINKS, TEXTURE_MAP } from "./constants";
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -14,6 +14,12 @@ const sizes = {
 };
 
 const cpuFans = [];
+
+const raycasterObjects = [];
+let currentIntersects = [];
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
 
 // Loaders
 const textureLoader = new THREE.TextureLoader();
@@ -50,7 +56,7 @@ Object.entries(TEXTURE_MAP).forEach(([key, paths]) => {
 });
 
 // Object Loader
-loader.load("/models/Portfolio_model_v2.glb", (glb) => {
+loader.load("/models/Portfolio_model_v3.glb", (glb) => {
   glb.scene.traverse((child) => {
     if (child.isMesh) {
       Object.keys(TEXTURE_MAP).forEach((key) => {
@@ -63,6 +69,10 @@ loader.load("/models/Portfolio_model_v2.glb", (glb) => {
 
           if (child.name.includes("fan")) {
             cpuFans.push(child);
+          }
+
+          if (child.name.includes("raycaster") && !child.name.includes("fan")) {
+            raycasterObjects.push(child);
           }
           if (child.material.map) {
             child.material.map.minFilter = THREE.LinearFilter;
@@ -115,6 +125,26 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
+window.addEventListener("mousemove", (e) => {
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+
+window.addEventListener("click", (e) => {
+  if (currentIntersects.length > 0) {
+    const object = currentIntersects[0].object;
+    Object.entries(SOCIAL_LINKS).forEach(([key, url]) => {
+      if (object.name.includes(key)) {
+        const newWindow = window.open();
+        newWindow.opener = null;
+        newWindow.location = url;
+        newWindow.target = "_blank";
+        newWindow.rel = "noopener noreferrer";
+      }
+    });
+  }
+});
+
 // LoopFunctions
 const render = () => {
   controls.update();
@@ -123,9 +153,28 @@ const render = () => {
   // console.log("/-----------------------/");
   // console.log(controls.target);
 
-  cpuFans.forEach((fan) => {
-    fan.rotation.z += 0.1;
+  //cpu fans animation
+  cpuFans.forEach((cpuFan) => {
+    cpuFan.rotation.z += 0.1;
   });
+
+  // raycaster
+  raycaster.setFromCamera(pointer, camera);
+
+  currentIntersects = raycaster.intersectObjects(raycasterObjects);
+
+  for (let i = 0; i < currentIntersects.length; i++) {}
+
+  if (currentIntersects.length > 0) {
+    const currentIntersectObject = currentIntersects[0].object;
+    if (currentIntersectObject.name.includes("pointer")) {
+      document.body.style.cursor = "pointer";
+    } else {
+      document.body.style.cursor = "default";
+    }
+  } else {
+    document.body.style.cursor = "default";
+  }
 
   renderer.render(scene, camera);
 

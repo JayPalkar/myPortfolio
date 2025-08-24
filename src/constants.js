@@ -55,3 +55,8 @@ export const TEXTURE_MAP = {
       "/textures/room/nightLightOn/ninth_texture_set_night_lights.webp",
   },
 };
+
+export const SOCIAL_LINKS = {
+  github: "https://github.com/JayPalkar",
+  linkedin: "https://www.linkedin.com/in/jay-palkar-26b551220/",
+};
