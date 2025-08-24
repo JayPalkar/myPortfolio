@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { hideModal, showModal } from "./animationFunctions";
 
 // Canvas
 const canvas = document.querySelector("#portfolioCanvas");
@@ -12,6 +13,20 @@ const sizes = {
   height: window.innerHeight,
   width: window.innerWidth,
 };
+
+const modals = {
+  mail: document.querySelector("#mail"),
+  abouts: document.querySelector("#abouts"),
+};
+
+const exitButton = document
+  .querySelectorAll("#modalExitButton")
+  .forEach((button) => {
+    button.addEventListener("click", (e) => {
+      const modal = e.target.closest(".modal");
+      hideModal(modal);
+    });
+  });
 
 const cpuFans = [];
 
@@ -142,6 +157,12 @@ window.addEventListener("click", (e) => {
         newWindow.rel = "noopener noreferrer";
       }
     });
+
+    if (object.name.includes("mail_box")) {
+      showModal(modals.mail);
+    } else if (object.name.includes("about_me")) {
+      showModal(modals.abouts);
+    }
   }
 });
 
