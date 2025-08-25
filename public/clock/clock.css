@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", "Courier New", monospace;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #000;
+}
+
+.clock {
+  padding: 20px 40px;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.clock h1 {
+  font-size: 18rem;
+  letter-spacing: 25px;
+  user-select: none;
+  color: #ffbb27;
+}

@@ -5,7 +5,6 @@ import * as THREE from "three";
 import { OrbitControls } from "./utils/orbitControls";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-// import { playHoverAnimation } from "./animationFunctions";
 import gsap from "gsap";
 
 // Canvas
@@ -37,7 +36,6 @@ const cpuFans = [];
 
 const raycasterObjects = [];
 let currentIntersects = [];
-let currentHoveredObject = null;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -123,7 +121,6 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(18.628652183389555, 14.94457844546518, 31.32241288603809);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -137,7 +134,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const controls = new OrbitControls(camera, renderer.domElement);
 
 controls.minDistance = 5;
-controls.maxDistance = 50;
+controls.maxDistance = 35;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2;
 controls.minAzimuthAngle = 0;
@@ -146,11 +143,21 @@ controls.maxAzimuthAngle = Math.PI / 2;
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.update();
-controls.target.set(
-  -0.8235149963276548,
-  3.4261704474788774,
-  -0.7296685568144353
-);
+if (window.innerWidth < 750) {
+  camera.position.set(9.373120475943182, 16.932596593263817, 46.31929612694968);
+  controls.target.set(
+    -0.8235149963276548,
+    3.4261704474788774,
+    -0.7296685568144353
+  );
+} else {
+  camera.position.set(18.628652183389555, 14.94457844546518, 31.32241288603809);
+  controls.target.set(
+    -0.8235149963276548,
+    3.4261704474788774,
+    -0.7296685568144353
+  );
+}
 
 // EventHandlers
 window.addEventListener("resize", () => {
@@ -191,11 +198,6 @@ const showModal = (modal) => {
   isModalOpen = true;
   controls.enabled = false;
 
-  if (currentHoveredObject) {
-    playHoverAnimation(currentHoveredObject, false);
-    currentHoveredObject = null;
-  }
-
   document.body.style.cursor = "default";
   currentIntersects = [];
 
@@ -213,51 +215,6 @@ const hideModal = (modal) => {
       modal.style.display = "none";
     },
   });
-};
-
-const playHoverAnimation = (object, isHovering) => {
-  gsap.killTweensOf(object.scale);
-  gsap.killTweensOf(object.position);
-  gsap.killTweensOf(object.rotation);
-
-  if (object.name.includes("_hover_3")) {
-    if (isHovering) {
-      gsap.to(object.scale, {
-        x: object.userData.initialScale.x,
-        y: object.userData.initialScale.y,
-        z: object.userData.initialScale.z,
-        duration: 0.2,
-        ease: "bounce.out(1.8)",
-      });
-    } else {
-      gsap.to(object.scale, {
-        x: object.userData.initialScale.x,
-        y: object.userData.initialScale.y,
-        z: object.userData.initialScale.z,
-        duration: 0.2,
-        ease: "bounce.out(1.8)",
-      });
-    }
-    return;
-  }
-
-  if (isHovering) {
-    gsap.to(object.scale, {
-      x: object.userData.initialScale.x * 1.2,
-      y: object.userData.initialScale.y * 1.2,
-      z: object.userData.initialScale.z * 1.2,
-      duration: 0.5,
-      ease: "bounce.out(1.8)",
-    });
-  } else {
-    gsap.to(object.scale, {
-      x: object.userData.initialScale.x,
-      y: object.userData.initialScale.y,
-      z: object.userData.initialScale.z,
-      duration: 0.2,
-      ease: "bounce.out(1.8)",
-    });
-  }
 };
 
 // Event listeners
@@ -311,27 +268,12 @@ const render = () => {
     if (currentIntersects.length > 0) {
       const currentIntersectObject = currentIntersects[0].object;
 
-      if (currentIntersectObject.name.includes("_hover")) {
-        if (currentIntersectObject !== currentHoveredObject) {
-          if (currentHoveredObject) {
-            playHoverAnimation(currentHoveredObject, false);
-          }
-
-          playHoverAnimation(currentIntersectObject, true);
-          currentHoveredObject = currentIntersectObject;
-        }
-      }
-
       if (currentIntersectObject.name.includes("pointer")) {
         document.body.style.cursor = "pointer";
       } else {
         document.body.style.cursor = "default";
       }
     } else {
-      if (currentHoveredObject) {
-        playHoverAnimation(currentHoveredObject, false);
-        currentHoveredObject = null;
-      }
       document.body.style.cursor = "default";
     }
   }
